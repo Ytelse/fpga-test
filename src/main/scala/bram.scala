@@ -5,16 +5,16 @@ import Chisel._
 
 class BramLed extends Module {
   val io = new Bundle {
-    val out = Bits(width = 1).asOutput
+    val out = Bits(width = 4).asOutput
+    val in = Bits(width = 4).asInput
   }
-  io.out := UInt(1)
+  io.out := io.in
 }
 
 
-object Bram {
+object Top {
   def main(args: Array[String]) {
-    val margs = Array("--backend", "v", "--genHarness")
-    chiselMainTest(margs, () =>
+    chiselMainTest(args, () =>
         Module(new BramLed)) {
       bl => new Tester(bl)
     }

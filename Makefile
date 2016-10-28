@@ -1,5 +1,5 @@
-EX_NAME = Exercise-1-
-.DEFAULT_GOAL = bitgen
+EX_NAME = BramLed
+.DEFAULT_GOAL = upload
 
 ############################################
 ## Build commands
@@ -7,6 +7,7 @@ EX_NAME = Exercise-1-
 # Note: DCP = Design Check-Point
 
 WORKDIR := ${CURDIR}/work
+SRCDIR := ${WORKDIR}/src
 TESTDIR := ${CURDIR}/tests
 TESTRESDIR := ${WORKDIR}/test-results
 VIVADO := /opt/Xilinx/Vivado/2016.2/bin/vivado -tempDir ${WORKDIR}
@@ -15,14 +16,18 @@ TESTSCRIPTDIR := ${CURDIR}/testscripts
 SYNTH_DCP := ${WORKDIR}/synth.dcp
 PLACE_DCP := ${WORKDIR}/place.dcp
 ROUTE_DCP := ${WORKDIR}/route.dcp
-BITFILE   := ${CURDIR}/${EX_NAME}Top.bit
-BINFILE   := ${CURDIR}/${EX_NAME}Top.bin
+BITFILE   := ${CURDIR}/${EX_NAME}-Top.bit
+BINFILE   := ${CURDIR}/${EX_NAME}-Top.bin
+CHISELFILES := $(shell find ${CURDIR} -iname '*scala')
 
 .PHONY: cs synth impl trans map par postpar_timing_report bitgen clean purge
 
 ############################################
 ## Design compilation commands
 # -------------------------------------
+
+chisel: ${CHISELFILES}
+	@sbt "runMain Bram.Top --backend v --genHarness --targetDir ${SRCDIR}"
 
 # Synthesize: elaborates the design (inferring hardware), and creates an FPGA
 # (LUT-based) implementation of it.
@@ -44,6 +49,9 @@ route: ${ROUTE_DCP}
 # and routing.
 bitgen: ${BITFILE}
 	@echo "Bitfile generation complete"
+
+upload: ${BITFILE}
+	${VIVADO} -mode batch -source ${SCRIPTDIR}/program_bitfile.tcl -tclargs ${BITFILE} | tee ${SYNTH_LOG}
 
 clean:
 	@-rm -rf ${WORKDIR}
@@ -96,12 +104,12 @@ ROUTE_LOG = ${RPT_DIR}/route.log
 BITGEN_DRC_RPT = ${RPT_DIR}/bitgen_design_rule_check.rpt
 BITGEN_LOG = ${RPT_DIR}/bitgen.log
 
-SRC_FILES = $(shell find -L ${CURDIR} framework -name '*.v')
-TEST_FILES = $(shell find -L ${CURDIR} -name '*.v')
+SRC_FILES = $(shell find -L ${SRCDIR} -name '*.v')
+TEST_FILES = $(shell find -L ${SRCDIR} -name '*.v')
 
 ## Call the top level "Top_cfg" for all exercises, to make it easy to reuse the
 ## Makefile.
-SYNTH_TOP ?= sw_btn_led
+SYNTH_TOP ?= BramLed
 
 ${WORKDIR}:
 	mkdir -p $@
