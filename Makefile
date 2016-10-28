@@ -30,7 +30,6 @@ BLOCK_PERIOD := 1234
 
 chisel: ${CHISELFILES} ${SRCDIR}
 	@sbt "runMain ${PACKAGE_NAME}.Main --backend v --targetDir ${SRCDIR}"
-	# @sed -i "s/\`CLOCK_PERIOD/${CLOCK_PERIOD}/g" ${SRCDIR}/*.v
 
 # Synthesize: elaborates the design (inferring hardware), and creates an FPGA
 # (LUT-based) implementation of it.
