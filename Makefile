@@ -1,4 +1,4 @@
-EX_NAME = BramLed
+PACKAGE_NAME = Bram
 .DEFAULT_GOAL = upload
 
 ############################################
@@ -16,9 +16,11 @@ TESTSCRIPTDIR := ${CURDIR}/testscripts
 SYNTH_DCP := ${WORKDIR}/synth.dcp
 PLACE_DCP := ${WORKDIR}/place.dcp
 ROUTE_DCP := ${WORKDIR}/route.dcp
-BITFILE   := ${CURDIR}/${EX_NAME}-Top.bit
-BINFILE   := ${CURDIR}/${EX_NAME}-Top.bin
+BITFILE   := ${WORKDIR}/${PACKAGE_NAME}-Top.bit
+BINFILE   := ${WORKDIR}/${PACKAGE_NAME}-Top.bin
+
 CHISELFILES := $(shell find ${CURDIR} -iname '*scala')
+BLOCK_PERIOD := 1234
 
 .PHONY: cs synth impl trans map par postpar_timing_report bitgen clean purge
 
@@ -26,8 +28,9 @@ CHISELFILES := $(shell find ${CURDIR} -iname '*scala')
 ## Design compilation commands
 # -------------------------------------
 
-chisel: ${CHISELFILES}
-	@sbt "runMain Bram.Top --backend v --genHarness --targetDir ${SRCDIR}"
+chisel: ${CHISELFILES} ${SRCDIR}
+	@sbt "runMain ${PACKAGE_NAME}.Main --backend v --targetDir ${SRCDIR}"
+	# @sed -i "s/\`CLOCK_PERIOD/${CLOCK_PERIOD}/g" ${SRCDIR}/*.v
 
 # Synthesize: elaborates the design (inferring hardware), and creates an FPGA
 # (LUT-based) implementation of it.
@@ -50,10 +53,11 @@ route: ${ROUTE_DCP}
 bitgen: ${BITFILE}
 	@echo "Bitfile generation complete"
 
-upload: ${BITFILE}
+upload: chisel ${BITFILE}
 	${VIVADO} -mode batch -source ${SCRIPTDIR}/program_bitfile.tcl -tclargs ${BITFILE} | tee ${SYNTH_LOG}
 
 clean:
+	@-rm -f ${CURDIR}/*.jou ${CURDIR}/*.log
 	@-rm -rf ${WORKDIR}
 
 purge: clean
@@ -109,7 +113,10 @@ TEST_FILES = $(shell find -L ${SRCDIR} -name '*.v')
 
 ## Call the top level "Top_cfg" for all exercises, to make it easy to reuse the
 ## Makefile.
-SYNTH_TOP ?= BramLed
+SYNTH_TOP ?= ${PACKAGE_NAME}
+
+${SRCDIR}:
+	mkdir -p $@
 
 ${WORKDIR}:
 	mkdir -p $@
@@ -119,6 +126,7 @@ ${SYNTH_DCP}: ${SRC_FILES} ${WORKDIR}
 	@echo "========================"
 	@cd ${WORKDIR} && \
 		env TOPDIR=${CURDIR} \
+		SRCDIR=${SRCDIR} \
 	  DCP=${SYNTH_DCP} \
 	  UTIL_RPT=${SYNTH_UTIL_RPT} \
 	  TIMING_RPT=${SYNTH_TIMING_RPT} \

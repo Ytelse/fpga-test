@@ -4,7 +4,7 @@
 #}
 #read_vhdl "${framework}"
 
-set sources [glob -nocomplain $env(TOPDIR)/src/*.v]
+set sources [glob -nocomplain $env(SRCDIR)/*.v]
 if { [llength $sources] == 0 } then {
     return -code error "\nERROR: No source files found in the src/ directory!\n"
 }
